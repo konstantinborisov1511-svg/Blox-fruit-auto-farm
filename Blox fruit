@@ -2,11 +2,11 @@
 -- ЧАСТЬ 1: ОПТИМИЗИРОВАННАЯ ЗАГРУЗКА ИНТЕРФЕЙСА ДЛЯ XENO
 -- ====================================================================
 local success, Fluent = pcall(function()
-    return loadstring(game:HttpGet("https://github.com"))()
+    return loadstring(game:HttpGet("https://githubusercontent.com"))()
 end)
 
 if not success or not Fluent then
-    -- Запасной вариант загрузки, если основной репозиторий заблокирован в Xeno
+    -- Запасной вариант загрузки (зеркало Fluent)
     Fluent = loadstring(game:HttpGet("https://githubusercontent.com"))()
 end
 
@@ -133,6 +133,7 @@ ToggleFarm:OnChanged(function()
             end)
         end
     end)
+end) -- ФИКС: Закрытие ToggleFarm
 -- ====================================================================
 -- ЧАСТЬ 3: БЕЗОПАСНЫЙ КЛИЕНТСКИЙ ESP И ПРИВЕТСТВИЕ
 -- ====================================================================
@@ -189,4 +190,3 @@ Fluent:Notify({
     Content = "Успешно запущено на Xeno! Нажмите Left Control.",
     Duration = 5
 })
-end)
