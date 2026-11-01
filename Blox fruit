@@ -1,29 +1,31 @@
 -- ====================================================================
--- ЧАСТЬ 1: ЗАГРУЗКА ИНТЕРФЕЙСА И БАЗОВЫЕ НАСТРОЙКИ
+-- ЧАСТЬ 1: ОПТИМИЗИРОВАННАЯ ЗАГРУЗКА ИНТЕРФЕЙСА ДЛЯ XENO
 -- ====================================================================
-local Fluent = loadstring(game:HttpGet("https://github.com"))()
-local SaveManager = loadstring(game:HttpGet("https://githubusercontent.com"))()
-local InterfaceManager = loadstring(game:HttpGet("https://githubusercontent.com"))()
+local success, Fluent = pcall(function()
+    return loadstring(game:HttpGet("https://github.com"))()
+end)
 
--- Создание главного окна с вашим названием
+if not success or not Fluent then
+    -- Запасной вариант загрузки, если основной репозиторий заблокирован в Xeno
+    Fluent = loadstring(game:HttpGet("https://githubusercontent.com"))()
+end
+
+-- Настройки окна, адаптированные под Xeno (без тяжелых эффектов)
 local Window = Fluent:CreateWindow({
     Title = "ameba hub | Blox Fruits",
-    SubTitle = "by AI Assistant",
+    SubTitle = "Xeno Stable Version",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
-    Acrylic = true,
+    Acrylic = false, -- ОТКЛЮЧЕНО: Фикс краша Xeno из-за эффекта размытия
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
--- Создание вкладок в меню
 local Tabs = {
     Main = Window:AddTab({ Title = "Авто Фарм", Icon = "home" }),
-    Visuals = Window:AddTab({ Title = "ESP / Визуал", Icon = "eye" }),
-    Settings = Window:AddTab({ Title = "Настройки", Icon = "settings" })
+    Visuals = Window:AddTab({ Title = "ESP / Визуал", Icon = "eye" })
 }
 
--- Глобальная конфигурация функций
 _G.Configs = {
     AutoFarm = false,
     AutoClicker = false,
@@ -32,16 +34,17 @@ _G.Configs = {
     SelectWeapon = "Melee"
 }
 
--- Защита от AFK (Анти-Кик сервером)
+-- Стабильный Анти-AFK для Xeno
 local LocalPlayer = game.Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
-LocalPlayer.Idled:Connect(function()
-    VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    task.wait(1)
-    VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+pcall(function()
+    LocalPlayer.Idled:Connect(function()
+        VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        task.wait(0.5)
+        VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    end)
 end)
 
--- Функция для безопасного телепорта
 local function toPos(cframe)
     pcall(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -50,12 +53,8 @@ local function toPos(cframe)
     end)
 end
 -- ====================================================================
--- ЧАСТЬ 2: ФУНКЦИИ АВТО-ФАРМА И СТЯГИВАНИЯ МОБОВ
+-- ЧАСТЬ 2: ЛОГИКА ФАРМА С ЗАЩИТОЙ ОТ ПУСТЫХ СТРОК
 -- ====================================================================
-local LocalPlayer = game.Players.LocalPlayer
-local VirtualUser = game:GetService("VirtualUser")
-
--- Кэширование выбранного оружия в руках
 local function getWeapon()
     for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
         if tool:IsA("Tool") and tool.ToolTip == _G.Configs.SelectWeapon then return tool end
@@ -66,7 +65,6 @@ local function getWeapon()
     return nil
 end
 
--- UI Элемент: Выбор категории оружия
 Tabs.Main:AddDropdown("WeaponSelect", {
     Title = "Выбрать тип оружия",
     Values = {"Melee", "Sword", "Blox Fruit"},
@@ -74,7 +72,6 @@ Tabs.Main:AddDropdown("WeaponSelect", {
     Callback = function(Value) _G.Configs.SelectWeapon = Value end
 })
 
--- UI Элемент: Быстрый клик (Атака)
 local ToggleClick = Tabs.Main:AddToggle("AutoClick", {Title = "Авто-Атака (Fast Click)", Default = false})
 ToggleClick:OnChanged(function()
     _G.Configs.AutoClicker = ToggleClick.Value
@@ -90,14 +87,11 @@ ToggleClick:OnChanged(function()
                     VirtualUser:CaptureController()
                     VirtualUser:ClickButton1(Vector2.new(850, 520))
                 end
-                VirtualUser:TypeKey("z")
-                VirtualUser:TypeKey("x")
             end)
         end
     end)
 end)
 
--- UI Элемент: Стягивание мобов в кучу (Bring Mobs)
 local ToggleBring = Tabs.Main:AddToggle("BringMobsToggle", {Title = "Стягивать мобов в одну точку", Default = false})
 ToggleBring:OnChanged(function()
     _G.Configs.BringMobs = ToggleBring.Value
@@ -106,12 +100,13 @@ ToggleBring:OnChanged(function()
             task.wait(0.2)
             pcall(function()
                 local playerPos = LocalPlayer.Character.HumanoidRootPart.Position
-                for _, enemy in pairs(workspace.Enemies:GetChildren()) do
-                    if enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-                        if (enemy.HumanoidRootPart.Position - playerPos).Magnitude < 350 then
-                            enemy.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, -1, -5)
-                            enemy.HumanoidRootPart.CanCollide = false
-                            if enemy.Humanoid:FindFirstChild("Animator") then enemy.Humanoid.Animator:Destroy() end
+                if workspace:FindFirstChild("Enemies") then
+                    for _, enemy in pairs(workspace.Enemies:GetChildren()) do
+                        if enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+                            if (enemy.HumanoidRootPart.Position - playerPos).Magnitude < 350 then
+                                enemy.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, -1, -5)
+                                enemy.HumanoidRootPart.CanCollide = false
+                            end
                         end
                     end
                 end
@@ -120,7 +115,6 @@ ToggleBring:OnChanged(function()
     end)
 end)
 
--- UI Элемент: Основной умный авто-фарм уровней
 local ToggleFarm = Tabs.Main:AddToggle("AutoFarmLevel", {Title = "Умный Авто Фарм Уровней", Default = false})
 ToggleFarm:OnChanged(function()
     _G.Configs.AutoFarm = ToggleFarm.Value
@@ -128,13 +122,9 @@ ToggleFarm:OnChanged(function()
         while _G.Configs.AutoFarm do
             task.wait(0.5)
             pcall(function()
-                local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
-                if not hasQuest then
-                    -- Логика полета к квест-гиверу (зависит от мира)
-                else
+                if workspace:FindFirstChild("Enemies") then
                     for _, enemy in pairs(workspace.Enemies:GetChildren()) do
                         if enemy:FindFirstChild("HumanoidRootPart") and enemy.Humanoid.Health > 0 then
-                            -- Удерживает персонажа на 10 блоков выше моба для безопасности
                             toPos(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
                             break
                         end
@@ -143,14 +133,12 @@ ToggleFarm:OnChanged(function()
             end)
         end
     end)
-end)
 -- ====================================================================
--- ЧАСТЬ 3: ФУНКЦИИ ESP И ПРИВЕТСТВИЕ AMEBA HUB
+-- ЧАСТЬ 3: БЕЗОПАСНЫЙ КЛИЕНТСКИЙ ESP И ПРИВЕТСТВИЕ
 -- ====================================================================
 local espFolder = Instance.new("Folder", game.CoreGui)
 espFolder.Name = "Premium_ESP_Storage"
 
--- Функция отрисовки и обновления ESP
 local function refreshFruitESP()
     espFolder:ClearAllChildren()
     if not _G.Configs.FruitESP then return end
@@ -159,7 +147,6 @@ local function refreshFruitESP()
         if obj:IsA("Tool") and (string.find(obj.Name, "Fruit") or string.find(obj.Name, "Фрукт")) then
             local handle = obj:FindFirstChild("Handle") or obj
             
-            -- Розовая 3D обводка (Box)
             local box = Instance.new("BoxHandleAdornment", espFolder)
             box.Size = Vector3.new(3, 3, 3)
             box.AlwaysOnTop = true
@@ -168,7 +155,6 @@ local function refreshFruitESP()
             box.Adornee = handle
             box.Transparency = 0.4
 
-            -- Текст над фруктом
             local billboard = Instance.new("BillboardGui", espFolder)
             billboard.AlwaysOnTop = true
             billboard.Size = UDim2.new(0, 150, 0, 50)
@@ -178,21 +164,18 @@ local function refreshFruitESP()
             label.Size = UDim2.new(1, 0, 1, 0)
             label.Text = obj.Name
             label.TextColor3 = Color3.fromRGB(255, 255, 255)
-            label.TextStrokeTransparency = 0
             label.BackgroundTransparency = 1
             label.TextScaled = true
         end
     end
 end
 
--- UI Элемент: Переключатель ESP фруктов
 local ToggleESP = Tabs.Visuals:AddToggle("FruitESPToggle", {Title = "Подсветка Дьявольских Фруктов", Default = false})
 ToggleESP:OnChanged(function()
     _G.Configs.FruitESP = ToggleESP.Value
     refreshFruitESP()
 end)
 
--- Авто-обновление при появлении нового фрукта на сервере
 workspace.ChildAdded:Connect(function()
     if _G.Configs.FruitESP then
         task.wait(0.5)
@@ -200,10 +183,10 @@ workspace.ChildAdded:Connect(function()
     end
 end)
 
--- ПРИВЕТСТВЕННАЯ НАДПИСЬ ПРИ ЗАПУСКЕ (ameba hub)
+-- Приветствие ameba hub
 Fluent:Notify({
     Title = "ameba hub",
-    Content = "Добро пожаловать! Скрипт успешно активирован. Нажмите Left Control для скрытия меню.",
+    Content = "Успешно запущено на Xeno! Нажмите Left Control.",
     Duration = 5
 })
-
+end)
