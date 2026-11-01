@@ -6,7 +6,7 @@ local success, Fluent = pcall(function()
 end)
 
 if not success or not Fluent then
-    -- Запасной вариант загрузки, если основной репозиторий недоступен
+    -- Запасной вариант загрузки (зеркало Fluent)
     Fluent = loadstring(game:HttpGet("https://githubusercontent.com"))()
 end
 
@@ -134,7 +134,7 @@ ToggleFarm:OnChanged(function()
             end)
         end
     end)
-end) -- ФИКС: Здесь корректно закрывается функция ToggleFarm
+end)
 
 -- ====================================================================
 -- ЧАСТЬ 3: БЕЗОПАСНЫЙ КЛИЕНТСКИЙ ESP И ПРИВЕТСТВИЕ
